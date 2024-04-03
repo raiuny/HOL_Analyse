@@ -19,15 +19,15 @@ def analyse_state(lambda1, p, tt, tf, W, K) -> int:
     """
     pi_tu = calc_pi_T_U(p, tt, tf, W, K, lambda1)
     pi_ts = calc_pi_T_S(p, tt, tf, W, K)
-    if pi_ts > lambda1 and lambda1 > pi_tu:
-        # print(f"I don't know the state of this node {lambda1}")
-        return -1
-    if pi_ts < lambda1:
-        return 1
-    if pi_tu > lambda1:
-        return 0
-    return -1
-    # return pi_ts , pi_tu
+    # if pi_ts > lambda1 and lambda1 > pi_tu:
+    #     # print(f"I don't know the state of this node {lambda1}")
+    #     return -1
+    # if pi_ts < lambda1:
+    #     return 1
+    # if pi_tu > lambda1:
+    #     return 0
+    # return -1
+    return pi_ts , pi_tu
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt

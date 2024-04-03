@@ -1,6 +1,6 @@
 # 1-2-as: 1 Link 2 Group All-Saturated
 from delay_calc import calc_access_delay_s, calc_access_delay_u
-from p_calc import calc_uu_p_formula, calc_uu_p_fsovle, calc_ss_p_formula, calc_ss_p_fsolve
+from p_calc import calc_uu_p_formula, calc_uu_p_fsovle, calc_ss_p_formula, calc_ss_p_fsolve, calc_ps_p_fsolve
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -12,8 +12,8 @@ n2 = 10 # number of SLDs
 tt = 36
 tf = 28
 if __name__ == "__main__":
-    lambda1_range = np.arange(0.035, 0.045, 0.0005)
-    lambda2_range = np.arange(0.035, 0.045, 0.0005)
+    lambda1_range = np.arange(0.035, 0.045, 0.0002)
+    lambda2_range = np.arange(0.035, 0.045, 0.0002)
     lambda1_set, lambda2_set = np.meshgrid(lambda1_range, lambda2_range)
     access_delay_ans = []
     access_delay_ans2 = []
@@ -36,11 +36,24 @@ if __name__ == "__main__":
             _, ad = calc_access_delay_u(p_au, tt, tf, W, K, lambda1)
             access_delay_ans.append(ad)
         else:
-            throughput_ans.append(min(pi_ts, lambda1) * n1 + min(pi_ts, lambda2) * n2)
-            throughput_ans_1.append(min(pi_ts, lambda1) * n1)
-            p_ans.append(p_as)
-            _, ad = calc_access_delay_s(p_as, tt, tf, W, K, lambda1, pi_ts)
-            access_delay_ans.append(ad)
+            p_ps = calc_ps_p_fsolve(n1, lambda1, n2, lambda2, W, K, W, K, tt, tf)
+            pi_ts_ps = calc_pi_T_S(p_ps, tt, tf, W, K)
+            print(lambda1, lambda2, lambda1*n1 + lambda2 *n2, p_ps, pi_ts_ps, pi_ts, pi_ts_ps > pi_ts, p_ps > p_as, sep="\t")
+            if p_ps > p_as: # partial saturated
+                p_ans.append(p_ps)
+                throughput_ans.append(min(pi_ts_ps, lambda1) * n1 + min(pi_ts_ps, lambda2) * n2)
+                throughput_ans_1.append(min(pi_ts_ps, lambda1) * n1)
+                if lambda1 * n1 > lambda2 * n2:
+                    _, ad = calc_access_delay_s(p_ps, tt, tf, W, K, lambda1, pi_ts_ps)
+                else:
+                    _, ad = calc_access_delay_u(p_ps, tt, tf, W, K, lambda1)
+                access_delay_ans.append(ad)
+            else: # all saturated
+                p_ans.append(p_as)
+                throughput_ans.append(min(pi_ts, lambda1) * n1 + min(pi_ts, lambda2) * n2)
+                throughput_ans_1.append(min(pi_ts, lambda1) * n1)
+                _, ad = calc_access_delay_s(p_as, tt, tf, W, K, lambda1, pi_ts)
+                access_delay_ans.append(ad)
         # _, ad = calc_access_delay_s(p, tt, tf, W, K, lambda1, pi_ts)
         # _, ad2 = calc_access_delay_s(p2, tt, tf, W, K, lambda1)
         # access_delay_ans.append(ad)
@@ -48,7 +61,7 @@ if __name__ == "__main__":
         # err_ac_delay.append(ad-ad2)
     # print(access_delay_ans)
     # print(err_ac_delay)
-    print(access_delay_ans)
+    # print(access_delay_ans)
     def reshape_like(x):
         return np.reshape(x, lambda1_set.shape)
     fig = plt.figure(1)

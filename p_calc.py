@@ -36,7 +36,12 @@ def calc_uu_p_fsovle(n1: int, lambda1: float, n2: int, lambda2: float, tt: float
 
 
 def calc_uu_p_formula(nmld: int, mld_lambda: float, nsld: int, sld_lambda: float, tt: float, tf: float)-> Tuple[float, float, float, bool]:
-    """ calculate p in U-U scenario, return p of each link (both unsaturated)
+    """ calc# `p_ps` is being calculated using the `calc_ps_p_fsolve` function, which is used to
+    # determine the probability of a partial saturated state in a system. This probability
+    # value is then used to make decisions regarding system behavior and resource allocation
+    # based on the comparison with other probabilities like `p_as` (probability of
+    # all-saturated state).
+    ulate p in U-U scenario, return p of each link (both unsaturated)
     Args:
         nmld (int): number of MLDs
         nsld (int): number of SLDs
@@ -59,7 +64,7 @@ def calc_uu_p_formula(nmld: int, mld_lambda: float, nsld: int, sld_lambda: float
     return pL, pS, uu
 
 
-def calc_ps_p_fsolve(n1: int, lambda1: float, n2: int, lambda2: float, W_1: int, K_1: int, W_2: int, K_2: int,  tt: float, tf: float)-> Tuple[float, float, bool]:
+def calc_ps_p_fsolve(n1: int, lambda1: float, n2: int, lambda2: float, W_1: int, K_1: int, W_2: int, K_2: int,  tt: float, tf: float)-> float:
     """_summary_
 
     Args:
@@ -75,7 +80,7 @@ def calc_ps_p_fsolve(n1: int, lambda1: float, n2: int, lambda2: float, W_1: int,
         tf (float): tau_F
 
     Returns:
-        Tuple[float, float, bool]: pL, pS, is_correct 
+        p_ps
     """
     pos = n1 * lambda1 - n2 * lambda2
     if pos > 0:
@@ -99,7 +104,7 @@ def calc_PA2(nMLD, nSLD, W_mld, K_mld, W_sld, K_sld):
     pa = root_scalar(pf, args=(nMLD, nSLD, W_mld, K_mld, W_sld, K_sld), bracket=[0.00001, 0.99999], method='brentq').root
     return pa, pf(pa, nMLD, nSLD, W_mld, K_mld, W_sld, K_sld)
 
-def calc_ss_p_fsolve(nmld: int, mld_lambda: float, nsld: int, sld_lambda: float, tt: float, tf: float, W_mld: int, K_mld: int, W_sld: int, K_sld: int)-> Tuple[float, float, float, bool]:
+def calc_ss_p_fsolve(nmld: int, nsld: int, W_mld: int, K_mld: int, W_sld: int, K_sld: int)-> Tuple[float, float, float, bool]:
     """ calculate p in S-S scenario, return p of each link and throughput on each link (both saturated)
     Args:
         M (int): number of links
@@ -109,7 +114,7 @@ def calc_ss_p_fsolve(nmld: int, mld_lambda: float, nsld: int, sld_lambda: float,
         tt: tau_T
         tf: tau_F
     Returns:
-        p
+        p, is_correct
     """
     ss = True
     pa1, err1 = calc_PA1(nmld-1, nsld, W_mld, K_mld, W_sld, K_sld)
@@ -118,7 +123,7 @@ def calc_ss_p_fsolve(nmld: int, mld_lambda: float, nsld: int, sld_lambda: float,
         ss = False
     return pa1, ss
 
-def calc_ss_p_formula(nmld: int, mld_lambda: float, nsld: int, sld_lambda: float, tt: float, tf: float, W_mld: int, K_mld: int, W_sld: int, K_sld: int)-> Tuple[float, bool]:
+def calc_ss_p_formula(nmld: int, nsld: int, W_mld: int, K_mld: int, W_sld: int, K_sld: int)-> Tuple[float, bool]:
     """
     Returns:
         p_as, is_correct
@@ -138,7 +143,7 @@ def calc_ps_p(n_s: int, W_s: int, K_s: int, n_u: int, lambda_u: float, tt: float
     def p_func(p, n_s, W_s, K_s, n_u, lambda_u):
         return p - exp(-(n_u * lambda_u) * (1 + tf - tf * p - (tt - tf) * np.log(p) * p) / (tt * p) - 2 * n_s * (2 * p - 1) / (2 * p - 1 + W_s * (p - 2 ** K_s * (1 - p) ** (K_s + 1))))
     ans = -1
-    for p in range(0.9999, 0.0001, -0.0001):
+    for p in np.arange(0.9999, 0.0001, -0.0001):
         err = np.abs(p_func(p, n_s, W_s, K_s, n_u, lambda_u))
         if err < 1e-4:
             ans = p

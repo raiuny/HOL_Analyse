@@ -10,8 +10,8 @@ n2 = 10 # number of SLDs
 tt = 36
 tf = 28
 if __name__ == "__main__":
-    lambda1_range = np.arange(0.001, 0.05, 0.001)
-    lambda2_range = np.arange(0.001, 0.05, 0.001)
+    lambda1_range = np.arange(0.001, 0.03, 0.001)
+    lambda2_range = np.arange(0.004, 0.05, 0.001)
     lambda1_set, lambda2_set = np.meshgrid(lambda1_range, lambda2_range)
     access_delay_ans = []
     access_delay_ans2 = []
