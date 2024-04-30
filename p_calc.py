@@ -28,14 +28,14 @@ def calc_uu_p_fsovle(n1: int, lambda1: float, n2: int, lambda2: float, tt: float
     err1 = x_equation(ans1)
     err2 = x_equation(ans2)
     p1 = A * lambda1 + (1 - z * lambda1) * 1 / ans1
-    if np.abs(err1) > 1e-6:
-        return p1, -1, False
+    if np.abs(err1) > 1e-5:
+        return -1, -1, False
     p2 = A * lambda2 + (1 - z * lambda2) * 1 / ans1
     # print("p1, p2: ", p1, p2)
     return p1, p2, True
 
 
-def calc_uu_p_formula(nmld: int, mld_lambda: float, nsld: int, sld_lambda: float, tt: float, tf: float)-> Tuple[float, float, float, bool]:
+def calc_uu_p_formula(nmld: int, mld_lambda: float, nsld: int, sld_lambda: float, tt: float, tf: float)-> Tuple[float, float, bool]:
     """ calc# `p_ps` is being calculated using the `calc_ps_p_fsolve` function, which is used to
     # determine the probability of a partial saturated state in a system. This probability
     # value is then used to make decisions regarding system behavior and resource allocation
@@ -59,12 +59,12 @@ def calc_uu_p_formula(nmld: int, mld_lambda: float, nsld: int, sld_lambda: float
     # pS = exp( np.real(lambertw(B*exp(-A), -1)) + A)
     pL = B / np.real(lambertw(B*exp(-A), 0))
     pS = B / np.real(lambertw(B*exp(-A), -1))
-    if not np.isreal(lambertw(B*exp(-A))):
+    if not np.isreal(lambertw(B*exp(-A))) or pL >= 1:
         uu = False
     return pL, pS, uu
 
 
-def calc_ps_p_fsolve(n1: int, lambda1: float, n2: int, lambda2: float, W_1: int, K_1: int, W_2: int, K_2: int,  tt: float, tf: float)-> float:
+def calc_ps_p_formula(n1: int, lambda1: float, n2: int, lambda2: float, W_1: int, K_1: int, W_2: int, K_2: int,  tt: float, tf: float)-> float:
     """_summary_
 
     Args:
@@ -82,13 +82,22 @@ def calc_ps_p_fsolve(n1: int, lambda1: float, n2: int, lambda2: float, W_1: int,
     Returns:
         p_ps
     """
-    pos = n1 * lambda1 - n2 * lambda2
-    if pos > 0:
-        p = calc_ps_p(n1, W_1, K_1, n2, lambda2, tt, tf)
-    else: 
-        p = calc_ps_p(n2, W_2, K_2, n1, lambda1, tt, tf)
-    return p
+    # US:
+    p_us2 = _calc_ps_p_formula(n2-1, W_2, K_2, n1, lambda1, tt, tf)
+    p_us1 = _calc_ps_p_formula(n2, W_2, K_2, n1-1, lambda1, tt, tf)
+    # SU:
+    p_su1 = _calc_ps_p_formula(n1-1, W_1, K_1, n2, lambda2, tt, tf)
+    p_su2 = _calc_ps_p_formula(n1, W_1, K_1, n2-1, lambda2, tt, tf)
+    return  p_us1, p_us2, p_su1, p_su2
 
+def calc_ps_p_fsolve(n1: int, lambda1: float, n2: int, lambda2: float, W_1: int, K_1: int, W_2: int, K_2: int,  tt: float, tf: float)-> float:
+    # US:
+    p_us1 = calc_PS1(n2, n1-1, W_2, K_2, lambda1, tt, tf)
+    p_us2 = calc_PS1(n2-1, n1, W_2, K_2, lambda1, tt, tf)
+    # SU:
+    p_su1 = calc_PS1(n1-1, n2, W_1, K_1, lambda2, tt, tf)
+    p_su2 = calc_PS1(n1, n2-1, W_1, K_1, lambda2, tt, tf)
+    return p_us1, p_us2, p_su1, p_su2
 
 def calc_PA1(nMLD, nSLD, W_mld, K_mld, W_sld, K_sld):
     def pf(p, nMLD, nSLD, W_mld, K_mld, W_sld, K_sld):
@@ -104,7 +113,7 @@ def calc_PA2(nMLD, nSLD, W_mld, K_mld, W_sld, K_sld):
     pa = root_scalar(pf, args=(nMLD, nSLD, W_mld, K_mld, W_sld, K_sld), bracket=[0.00001, 0.99999], method='brentq').root
     return pa, pf(pa, nMLD, nSLD, W_mld, K_mld, W_sld, K_sld)
 
-def calc_ss_p_fsolve(nmld: int, nsld: int, W_mld: int, K_mld: int, W_sld: int, K_sld: int)-> Tuple[float, float, float, bool]:
+def calc_ss_p_fsolve(nmld: int, nsld: int, W_mld: int, K_mld: int, W_sld: int, K_sld: int)-> Tuple[float, bool]:
     """ calculate p in S-S scenario, return p of each link and throughput on each link (both saturated)
     Args:
         M (int): number of links
@@ -117,10 +126,11 @@ def calc_ss_p_fsolve(nmld: int, nsld: int, W_mld: int, K_mld: int, W_sld: int, K
         p, is_correct
     """
     ss = True
-    pa1, err1 = calc_PA1(nmld-1, nsld, W_mld, K_mld, W_sld, K_sld)
-    # pa2, err2 = calc_PA2(nmld, nsld-1, W_mld, K_mld, W_sld, K_sld)
+    pa1, err1 = calc_PA1(nmld, nsld, W_mld, K_mld, W_sld, K_sld)
+    pa2, err2 = calc_PA1(nmld, nsld, W_mld, K_mld, W_sld, K_sld)
     if np.abs(err1) > 1e-5:
         ss = False
+        return -1, -1, False
     return pa1, ss
 
 def calc_ss_p_formula(nmld: int, nsld: int, W_mld: int, K_mld: int, W_sld: int, K_sld: int)-> Tuple[float, bool]:
@@ -139,13 +149,25 @@ def calc_ss_p_formula(nmld: int, nsld: int, W_mld: int, K_mld: int, W_sld: int, 
     
 
 # 求解us方程
-def calc_ps_p(n_s: int, W_s: int, K_s: int, n_u: int, lambda_u: float, tt: float, tf: float) -> float:
+def _calc_ps_p_formula(n_s: int, W_s: int, K_s: int, n_u: int, lambda_u: float, tt: float, tf: float) -> float:
     def p_func(p, n_s, W_s, K_s, n_u, lambda_u):
         return p - exp(-(n_u * lambda_u) * (1 + tf - tf * p - (tt - tf) * np.log(p) * p) / (tt * p) - 2 * n_s * (2 * p - 1) / (2 * p - 1 + W_s * (p - 2 ** K_s * (1 - p) ** (K_s + 1))))
     ans = -1
     for p in np.arange(0.9999, 0.0001, -0.0001):
         err = np.abs(p_func(p, n_s, W_s, K_s, n_u, lambda_u))
-        if err < 1e-4:
+        if err < 1e-3:
+            ans = p
+            break
+    return ans
+
+def calc_PS1(n_s, n_u, W_s, K_s, lambda_u, tt, tf): # nMLD unsaturated, nSLD saturated
+    def pf(p, n_s, n_u, W_s, K_s, lambda_u):
+        return p - (1 - 2 * (2 * p - 1) / (2 * p - 1 + W_s * (p - 2 ** K_s * (1 - p) ** (K_s + 1))) ) ** n_s *\
+                        (1 - lambda_u * (1 + tf - tf * p - (tt - tf) * np.log(p) * p) / (tt * p)) ** n_u
+    ans = -1
+    for p in np.arange(0.9999, 0.0001, -0.0001):
+        err = np.abs(pf(p, n_s, n_u, W_s, K_s, lambda_u))
+        if err < 1e-3:
             ans = p
             break
     return ans

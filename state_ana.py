@@ -3,6 +3,7 @@ import numpy as np
 # 节点饱和时的服务率 mu_S
 def calc_pi_T_S(p: float, tt: float, tf: float, W: int, K: int) -> float:
     alpha = 1 / (1 + tf - tf * p - (tt - tf) * p * np.log(p))
+    # alpha = calc_alpha_sym(tt, tf, 20, p)
     ret = 2 * alpha * tt * p * (2 * p - 1) / (2 * p - 1 + W * ( p - 2 ** K * (1 - p) ** (K + 1)))
     return ret
 
@@ -28,6 +29,16 @@ def analyse_state(lambda1, p, tt, tf, W, K) -> int:
     #     return 0
     # return -1
     return pi_ts , pi_tu
+
+def calc_alpha_sym(tt, tf, n, p): 
+    alpha = 1/(tf + 1 + (tt - tf) * (n * p - n * p ** (n/(n-1))) - tf * p ** (n/(n-1)))
+    return alpha
+
+def calc_alpha_asym(tt, tf, n1, p1, n2, p2):
+    n = n1 + n2
+    pp = (p1 ** n1 * p2 ** n2) ** (1/(n-1))
+    alpha = 1/(tf + 1 + (tt - tf) * (n1 * p1 + n2 * p2 - n * pp) - tf * pp)
+    return alpha
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt

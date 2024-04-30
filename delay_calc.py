@@ -82,4 +82,4 @@ def calc_access_delay_s(p: float, tt: float, tf: float, W: int, K: int, ilambda:
     # ED01_L = tt + (1 + W) / 2
     # print(ED0_1, ED01_L)
     # total_delay = queuing_delay + access_delay
-    return None , access_delay
+    return -1, access_delay
