@@ -35,7 +35,7 @@ def calc_access_delay_u(p: float, tt: float, tf: float, W: int, K: int, ilambda:
             sum([(tf + G1Y[i]) * (sum_iK(i + 1) + (1 - p) ** K / p * (p * tt + (1 - p) * tf + G1Y[K])) for i in range(K)]) \
             + 2 * (1 - p) ** (K + 1) / p ** 2 * (tf + G1Y[K]) * (p * tt + (1 - p) * tf + G1Y[K]) + tt * (tt - 1) + (1 - p) / p * (tf ** 2 - tf)
     ED0_2 = G2D01 + ED0_1
-
+    
     # according to Geo/G/1's theoretical formula
     ED0_2_L = tt ** 2 + (1 + W) * tt + (1 + 3 * W + 2 * W ** 2) / 6
     queuing_delay = ilambda / tt * (ED0_2 - ED0_1) / (2 * (1 - ilambda / tt * ED0_1))

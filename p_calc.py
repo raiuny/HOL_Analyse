@@ -126,7 +126,7 @@ def calc_ss_p_fsolve(nmld: int, nsld: int, W_mld: int, K_mld: int, W_sld: int, K
         p, is_correct
     """
     ss = True
-    pa1, err1 = calc_PA1(nmld, nsld, W_mld, K_mld, W_sld, K_sld)
+    pa1, err1 = calc_PA1(nmld-1, nsld, W_mld, K_mld, W_sld, K_sld)
     pa2, err2 = calc_PA1(nmld, nsld, W_mld, K_mld, W_sld, K_sld)
     if np.abs(err1) > 1e-5:
         ss = False
