@@ -5,10 +5,11 @@ from state_ana import calc_pi_T_S
 import numpy as np
 class HOL_Model:
     def __init__(self, n1, n2, lambda1, lambda2, W_1, W_2, K_1, K_2, tt, tf) -> None:
-        p_uu, _, flag = calc_uu_p_fsovle(n1, lambda1, n2, lambda2, tt, tf)
-        p_uu1, _, flag1 = calc_uu_p_formula(n1, lambda1, n2, lambda2, tt, tf)
-        print(flag, flag1)
-        print(p_uu, p_uu1)
+        self.tt = tt
+        p_uu1, _, flag = calc_uu_p_fsovle(n1, lambda1, n2, lambda2, tt, tf)
+        p_uu, _, flag1 = calc_uu_p_formula(n1, lambda1, n2, lambda2, tt, tf)
+        # print(flag, flag1)
+        # print(p_uu, p_uu1)
         if flag1:
             qd1, ad1 = calc_access_delay_u(p_uu, tt, tf, W_1, K_1, lambda1)
             qd2, ad2 = calc_access_delay_u(p_uu, tt, tf, W_2, K_2, lambda2)
@@ -89,8 +90,8 @@ class HOL_Model:
         return self.p1, self.p2
     
     @property
-    def throughput(self):
-        return self.throughput_1/32, self.throughput_2/32
+    def throughput(self): # per slot
+        return self.throughput_1/self.tt, self.throughput_2/self.tt
     
     @property
     def access_delay(self):
@@ -99,10 +100,14 @@ class HOL_Model:
     @property
     def queuing_delay(self):
         return self.queuing_delay_1, self.queuing_delay_2
+    
+    @property
+    def e2e_delay(self):
+        return self.queuing_delay_1 + self.access_delay_1, self.queuing_delay_2 + self.access_delay_2 
 
 
 if __name__ == "__main__":
-    lambda_per_slot = 0.005
+    lambda_per_slot = 0.002
     tau_T = 32
     print("lambda_tt: ", tau_T * lambda_per_slot)
     model = HOL_Model(
@@ -110,8 +115,8 @@ if __name__ == "__main__":
         n2 = 5,
         lambda1 = tau_T * lambda_per_slot,
         lambda2 = tau_T * lambda_per_slot,
-        W_1 = 128,
-        W_2 = 128,
+        W_1 = 16,
+        W_2 = 16,
         K_1 = 6,
         K_2 = 6,
         tt = tau_T,
